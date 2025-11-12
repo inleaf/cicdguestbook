@@ -41,7 +41,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "==== [1] 이동 및 최신 코드 반영 ===="
-            cd /${{ secrets.EC_USER }}/guestbook-docker-app || mkdir -p /${{ secrets.EC_USER }}/guestbook-docker-app && cd /${{ secrets.EC_USER }}/guestbook-docker-app
+            cd /${{ secrets.EC2_USER }}/guestbook-docker-app || mkdir -p /${{ secrets.EC2_USER }}/guestbook-docker-app && cd /${{ secrets.EC2_USER }}/guestbook-docker-app
 
             echo "==== [2] docker-compose.yml 업데이트 ===="
             # GitHub 저장소에서 최신 docker-compose.yml을 가져오려면 다음 줄을 유지:
