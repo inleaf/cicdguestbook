@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  mysqldb:
+    image: mysql:8
+    container_name: mysqldb
+    environment:
+      MYSQL_ROOT_PASSWORD: education
+      MYSQL_DATABASE: guestbook
+    ports:
+      - "3310:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - guestbook_network
+
+  guestbook-app:
+    image: inleaf/guestbook-app:latest  
+    container_name: guestbook-app
+    ports:
+      - "8888:8080"
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysqldb:3306/guestbook?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: education
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.MySQL8Dialect"
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    networks:
+      - guestbook_network
+
+volumes:
+  mysql_data:
+
+networks:
+  guestbook_network:
+    driver: bridge

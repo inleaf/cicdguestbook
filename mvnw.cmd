@@ -1,0 +1,1 @@
+REM Windows Maven wrapper script (placeholder)

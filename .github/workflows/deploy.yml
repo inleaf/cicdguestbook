@@ -1,0 +1,58 @@
+name: Deploy to EC2 (Amazon Linux, root)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest   # GitHub Actions 기본 실행 환경 (변경 불가)
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build JAR with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Build Docker image
+        run: docker build -t inleaf/guestbook-app:latest .
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker image to Docker Hub
+        run: docker push inleaf/guestbook-app:latest
+
+      - name: Deploy to EC2 (Amazon Linux)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: root
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "==== [1] 이동 및 최신 코드 반영 ===="
+            cd /${{ secrets.EC_USER }}/guestbook-docker-app || mkdir -p /${{ secrets.EC_USER }}/guestbook-docker-app && cd /${{ secrets.EC_USER }}/guestbook-docker-app
+
+            echo "==== [2] docker-compose.yml 업데이트 ===="
+            # GitHub 저장소에서 최신 docker-compose.yml을 가져오려면 다음 줄을 유지:
+            # (만약 EC2 내에서 수동 관리한다면 이 부분 제거 가능)
+            curl -O https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml
+
+            echo "==== [3] 컨테이너 재시작 [문법주의]===="
+            docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' -p '${{ secrets.DOCKERHUB_TOKEN }}'
+            docker-compose down
+            docker-compose pull
+            docker-compose up -d
+
+            echo "==== [4] 현재 실행 중 컨테이너 ===="
+            docker ps -a
